@@ -17,22 +17,9 @@
 
 typedef struct
 {
-    double F;
-    double H;
     double X;
     double Y;
     double Z;
-    double D_deg;
-    double D_min;
-    double I_deg;
-    double I_min;
-    double dF;
-    double dH;
-    double dX;
-    double dY;
-    double dZ;
-    double dD_min;
-    double dI_min;
 } magfield_t;
 
 int my_isnan(double d);

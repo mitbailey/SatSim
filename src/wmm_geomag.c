@@ -109,254 +109,59 @@ magfield_t wmm_main(double latitude, double longitude, double altitude, double a
     fclose(wmmtemp);
     strcpy(goodbye, "\n -- End of WMM Point Calculation Program -- \n\n");
     // ans = geomag_introduction(epochlowlim);
-    ans = 'y';
 
-    if ((ans == 'y') || (ans == 'Y'))
-    {
+    maxdeg = 12;
+    warn_H = 0;
+    warn_H_val = 99999.0;
+    warn_H_strong = 0;
+    warn_H_strong_val = 99999.0;
+    warn_P = 0;
 
-        /* INITIALIZE GEOMAG ROUTINE */
+    geomag(&maxdeg);
 
-    S1:
+    // printf("\n\n\nENTER LATITUDE IN DECIMAL DEGREES ");
+    // printf("\n(North latitude positive, South latitude negative \n");
+    // printf("i.e. 25.5 for 25 degrees 30 minutes north.) \n");
+    // scanf("%lf%*[^\n]", &dlat);
+    dlat = latitude;
+    // getchar();
 
-        maxdeg = 12;
-        warn_H = 0;
-        warn_H_val = 99999.0;
-        warn_H_strong = 0;
-        warn_H_strong_val = 99999.0;
-        warn_P = 0;
+    // printf("ENTER LONGITUDE IN DECIMAL DEGREES");
+    // printf("(East longitude positive, West negative \n");
+    // printf("i.e.- 100.0 for 100.0 degrees west.)\n");
+    // scanf("%lf%*[^\n]", &dlon);
+    dlon = longitude;
+    // getchar();
 
-        geomag(&maxdeg);
+    // printf("ENTER ALTITUDE IN KILOMETERS ABOVE WGS84 ELLIPSOID\n");
+    // scanf("%lf%*[^\n]", &altm);
+    altm = altitude;
+    // getchar();
+    alt = altm;
 
-        // printf("\n\n\nENTER LATITUDE IN DECIMAL DEGREES ");
-        // printf("\n(North latitude positive, South latitude negative \n");
-        // printf("i.e. 25.5 for 25 degrees 30 minutes north.) \n");
-        // scanf("%lf%*[^\n]", &dlat);
-        dlat = latitude;
-        // getchar();
+    epochuplim = epochlowlim + epochrange;
+    // printf("ENTER TIME IN DECIMAL YEAR (%-7.2lf - %-7.2lf)\n", epochlowlim, epochuplim);
+    // scanf("%lf%*[^\n]", &time);
+    time = argtime;
+    // getchar();
 
-        // printf("ENTER LONGITUDE IN DECIMAL DEGREES");
-        // printf("(East longitude positive, West negative \n");
-        // printf("i.e.- 100.0 for 100.0 degrees west.)\n");
-        // scanf("%lf%*[^\n]", &dlon);
-        dlon = longitude;
-        // getchar();
+    geomg1(alt, dlat, dlon, time, &dec, &dip, &ti, &gv);
+    time1 = time;
+    dec1 = dec;
+    dip1 = dip;
+    ti1 = ti;
+    time = time1 + 1.0;
 
-        // printf("ENTER ALTITUDE IN KILOMETERS ABOVE WGS84 ELLIPSOID\n");
-        // scanf("%lf%*[^\n]", &altm);
-        altm = altitude;
-        // getchar();
-        alt = altm;
+    /*COMPUTE X, Y, Z, AND H COMPONENTS OF THE MAGNETIC FIELD*/
 
-        epochuplim = epochlowlim + epochrange;
-        // printf("ENTER TIME IN DECIMAL YEAR (%-7.2lf - %-7.2lf)\n", epochlowlim, epochuplim);
-        // scanf("%lf%*[^\n]", &time);
-        time = argtime;
-        // getchar();
-
-        geomg1(alt, dlat, dlon, time, &dec, &dip, &ti, &gv);
-        time1 = time;
-        dec1 = dec;
-        dip1 = dip;
-        ti1 = ti;
-        time = time1 + 1.0;
-
-        geomg1(alt, dlat, dlon, time, &dec, &dip, &ti, &gv);
-        time2 = time;
-        dec2 = dec;
-        dip2 = dip;
-        ti2 = ti;
-
-        /*COMPUTE X, Y, Z, AND H COMPONENTS OF THE MAGNETIC FIELD*/
-
-        x1 = ti1 * (cos((dec1 * rTd)) * cos((dip1 * rTd)));
-        x2 = ti2 * (cos((dec2 * rTd)) * cos((dip2 * rTd)));
-        y1 = ti1 * (cos((dip1 * rTd)) * sin((dec1 * rTd)));
-        y2 = ti2 * (cos((dip2 * rTd)) * sin((dec2 * rTd)));
-        z1 = ti1 * (sin((dip1 * rTd)));
-        z2 = ti2 * (sin((dip2 * rTd)));
-        h1 = ti1 * (cos((dip1 * rTd)));
-        h2 = ti2 * (cos((dip2 * rTd)));
-
-        /*  COMPUTE ANNUAL CHANGE FOR TOTAL INTENSITY  */
-        ati = ti2 - ti1;
-
-        /*  COMPUTE ANNUAL CHANGE FOR DIP & DEC  */
-        adip = (dip2 - dip1) * 60.;
-        adec = (dec2 - dec1) * 60.;
-
-        /*  COMPUTE ANNUAL CHANGE FOR X, Y, Z, AND H */
-        ax = x2 - x1;
-        ay = y2 - y1;
-        az = z2 - z1;
-        ah = h2 - h1;
-
-        if (dec1 < 0.0)
-        {
-            strcpy(decd, "(WEST)");
-        }
-        else
-        {
-            strcpy(decd, "(EAST)");
-        }
-
-        if (dip1 < 0.0)
-        {
-            strcpy(dipd, "(UP)  ");
-        }
-        else
-        {
-            strcpy(dipd, "(DOWN)");
-        }
-
-        /* deal with geographic and magnetic poles */
-
-        if (h1 < 100.0) /* at magnetic poles */
-        {
-            dec1 = NaN;
-            adec = NaN;
-            strcpy(decd, "(VOID)");
-            /* while rest is ok */
-        }
-
-        if (h1 < 1000.0)
-        {
-            warn_H = 0;
-            warn_H_strong = 1;
-            warn_H_strong_val = h1;
-        }
-        else if (h1 < 5000.0 && !warn_H_strong)
-        {
-            warn_H = 1;
-            warn_H_val = h1;
-        }
-
-        /* convert D and I to deg and min */
-        if (my_isnan(dec1))
-            ddeg = dec1;
-        else
-            ddeg = (int)dec1;
-        dmin = (dec1 - (double)ddeg) * 60;
-        if (dec1 > 0 && dmin >= 59.5)
-        {
-            dmin -= 60.0;
-            ddeg++;
-        }
-        if (dec1 < 0 && dmin <= -59.5)
-        {
-            dmin += 60.0;
-            ddeg--;
-        }
-        if (ddeg != 0)
-            dmin = fabs(dmin);
-
-        if (my_isnan(dip1))
-            ideg = dip1;
-        else
-            ideg = (int)dip1;
-        imin = (dip1 - (double)ideg) * 60;
-        if (dip1 > 0 && imin >= 59.5)
-        {
-            imin -= 60.0;
-            ideg++;
-        }
-        if (dip1 < 0 && imin <= -59.5)
-        {
-            imin += 60.0;
-            ideg--;
-        }
-        if (ideg != 0)
-            imin = fabs(imin);
-
-#ifndef SUPPRESS_RESULTS
-        printf("\n Results For \n");
-        if (dlat < 0)
-            printf("\n LATITUDE:     %7.2lfS", -dlat);
-        else
-            printf("\n LATITUDE:     %7.2lfN", dlat);
-        if (dlon < 0)
-            printf("\n LONGITUDE:    %7.2lfW", -dlon);
-        else
-            printf("\n LONGITUDE:    %7.2lfE", dlon);
-
-        printf("\n ALTITUDE:    %8.2lf KM ABOVE WGS84 ELLIPSOID", altm);
-        printf("\n DATE:         %6.1lf\n", time1);
-
-        printf("\n     Main Field    \t\t\t      Secular Change");
-
-        printf("\n F      =    %-9.1lf nT\t\t   dF  = %-8.1lf nT/yr", ti1, ati);
-        if (my_isnan(h1))
-            printf("\n H      =    NaN         \t\t   dH  = NaN");
-        else
-            printf("\n H      =    %-9.1lf nT\t\t   dH  = %-8.1lf nT/yr", h1, ah);
-        if (my_isnan(x1))
-            printf("\n X      =    NaN         \t\t   dX  = NaN");
-        else
-            printf("\n X      =    %-9.1lf nT\t\t   dX  = %-8.1lf nT/yr ", x1, ax);
-        if (my_isnan(y1))
-            printf("\n Y      =    NaN         \t\t   dY  = NaN");
-        else
-            printf("\n Y      =    %-9.1lf nT\t\t   dY  = %-8.1lf nT/yr ", y1, ay);
-        printf("\n Z      =    %-9.1lf nT\t\t   dZ  = %-8.1lf nT/yr ", z1, az);
-        if (my_isnan(dec1))
-            printf("\n D      =    NaN         \t\t   dD  = NaN");
-        else
-            printf("\n D      = %4.0lf Deg %3.0lf Min  %s\t   dD  = %-8.1lf Min/yr", ddeg, dmin, decd, adec);
-        printf("\n I      = %4.0lf Deg %3.0lf Min  %s\t   dI  = %-8.1lf Min/yr", ideg, imin, dipd, adip);
-#endif // SUPPRESS_RESULTS
-
-        if (warn_H)
-        {
-            printf("\n\nWarning: The horizontal field strength at this location is only %6.1lf nT\n", warn_H_val);
-            printf("         Compass readings have large uncertainties in areas where H is\n");
-            printf("         smaller than 5000 nT\n");
-        }
-        if (warn_H_strong)
-        {
-            printf("\n\nWarning: The horizontal field strength at this location is only %6.1lf nT\n", warn_H_strong_val);
-            printf("         Compass readings have VERY LARGE uncertainties in areas where H is\n");
-            printf("         smaller than 1000 nT\n");
-        }
-        if (warn_P)
-        {
-            printf("\n\nWarning: Location is at geographic pole where X, Y, and Decl are undefined\n");
-        }
-
-        // printf("\n\nDO YOU NEED MORE POINT DATA? (y or n) ");
-        // scanf("%c%*[^\n]", &answer);
-        // getchar();
-
-        if ((answer == 'y') || (answer == 'Y'))
-            goto S1;
-        // else
-        // {
-        //     printf("%s", goodbye);
-        // }
-    }
-
-    // else
-    // {
-    //     printf("%s", goodbye);
-    // }
-
-    // exit(0);
+    x1 = ti1 * (cos((dec1 * rTd)) * cos((dip1 * rTd)));
+    y1 = ti1 * (cos((dip1 * rTd)) * sin((dec1 * rTd)));
+    z1 = ti1 * (sin((dip1 * rTd)));
 
     magfield_t results = {0};
-    results.F = ti1;
-    results.dF = ati;
-    results.H = h1;
-    results.dH = ah;
     results.X = x1;
-    results.dX = ax;
     results.Y = y1;
-    results.dY = ay;
     results.Z = z1;
-    results.dZ = az;
-    results.D_deg = ddeg;
-    results.D_min = dmin;
-    results.dD_min = adec;
-    results.I_deg = ideg;
-    results.I_min = imin;
-    results.dI_min = adip;
 
     return results;
 }
